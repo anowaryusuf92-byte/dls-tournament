@@ -1,105 +1,17 @@
-LaunchedEffect(Unit) {
-    db.collection("app_config").document("settings")
-        .get()
-        .addOnSuccessListener { doc ->
-            if (doc.exists()) {
-                isAppActive = doc.getBoolean("isAppActive") ?: true
-                offerTitle = doc.getString("monthlyOfferTitle") ?: ""
-                offerDetails = doc.getString("monthlyOfferDetails") ?: ""
-                bonusAmount = doc.getString("bonusAmount") ?: "0"
-                noticeMessage = doc.getString("noticeMessage") ?: ""
-            }
-        }
-}
+- name: Set up JDK 17
+    uses: actions/setup-java@v3
+    with:
+      java-version: '17'
+      distribution: 'temurin'
 
-Scaffold(
-    topBar = { TopAppBar(title = { Text("অ্যাপ ও অফার কন্ট্রোল প্যানেল") }) }
-) { padding ->
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("অ্যাপ চালুর অবস্থা (App Active):", style = MaterialTheme.typography.titleMedium)
-                Switch(
-                    checked = isAppActive,
-                    onCheckedChange = { isAppActive = it }
-                )
-            }
-        }
+  - name: Setup Gradle
+    uses: gradle/gradle-build-action@v2
 
-        OutlinedTextField(
-            value = offerTitle,
-            onValueChange = { offerTitle = it },
-            label = { Text("মাসিক অফারের টাইটেল") },
-            modifier = Modifier.fillMaxWidth()
-        )
+  - name: Build APK
+    run: ./gradlew assembleDebug
 
-        OutlinedTextField(
-            value = offerDetails,
-            onValueChange = { offerDetails = it },
-            label = { Text("অফারের বিস্তারিত তথ্য") },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 3
-        )
-
-        OutlinedTextField(
-            value = bonusAmount,
-            onValueChange = { bonusAmount = it },
-            label = { Text("বোনাস পয়েন্ট / অ্যামাউন্ট (BDT)") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = noticeMessage,
-            onValueChange = { noticeMessage = it },
-            label = { Text("জরুরি নোটিশ (হোম পেজে দেখাবে)") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Button(
-            onClick = {
-                val config = AppConfig(
-                    isAppActive = isAppActive,
-                    monthlyOfferTitle = offerTitle,
-                    monthlyOfferDetails = offerDetails,
-                    bonusAmount = bonusAmount,
-                    noticeMessage = noticeMessage
-                )
-                db.collection("app_config").document("settings")
-                    .set(config)
-                    .addOnSuccessListener {
-                        statusMsg = "সফলভাবে আপডেট করা হয়েছে!"
-                    }
-                    .addOnFailureListener {
-                        statusMsg = "আপডেট ব্যর্থ হয়েছে: ${it.localizedMessage}"
-                    }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("সেটিংস সেভ করুন")
-        }
-
-        if (statusMsg.isNotEmpty()) {
-            Text(
-                text = statusMsg,
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-    }
-}
+  - name: Upload APK
+    uses: actions/upload-artifact@v3
+    with:
+      name: Football-Tournament-App
+      path: app/build/outputs/apk/debug/app-debug.apk
